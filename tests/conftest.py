@@ -1,5 +1,4 @@
 from flask import Flask
-import userv
 import pytest
 from userv.encyclopedia.factory import create_app
 

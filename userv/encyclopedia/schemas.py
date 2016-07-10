@@ -1,9 +1,10 @@
-from marshmallow_sqlalchemy import ModelSchema
-from userv.encyclopedia.models import Fact
+from flask_marshmallow import Marshmallow
+from .models import Fact
 
+ma = Marshmallow()
 
-class FactSchema(ModelSchema):
+class FactSchema(ma.ModelSchema):
     class Meta:
         model = Fact
+    
 
-fact_schema = FactSchema()

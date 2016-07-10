@@ -1,11 +1,15 @@
 from flask import Flask
+from flask import _app_ctx_stack as stack
 import pytest
 from userv.encyclopedia.factory import create_app
+from userv.encyclopedia.database import db as _db
+import os
+from flask_sqlalchemy import SignallingSession
 
 
 TESTDB = 'test_project.db'
-TESTDB_PATH = "/opt/project/data/{}".format(TESTDB)
-TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
+#TESTDB_PATH = "/tmp/{}".format(TESTDB)
+TEST_DATABASE_URI = 'sqlite:////tmp/unittest.db'
 
 
 @pytest.fixture(scope='session')
@@ -16,7 +20,6 @@ def app(request):
         'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URI
     }
     app = create_app(__name__, settings_override)
-
 
     # Establish an application context before running the tests.
     ctx = app.app_context()
@@ -31,19 +34,18 @@ def app(request):
 @pytest.fixture(scope='session')
 def db(app, request):
     """Session-wide test database."""
-    if os.path.exists(TESTDB_PATH):
-        os.unlink(TESTDB_PATH)
+    #if os.path.exists(TESTDB_PATH):
+    #    os.unlink(TESTDB_PATH)
 
     def teardown():
         _db.drop_all()
-        os.unlink(TESTDB_PATH)
-
+    
     _db.app = app
-    apply_migrations()
+
 
     request.addfinalizer(teardown)
     return _db
-
+ 
 
 @pytest.fixture(scope='function')
 def session(db, request):
@@ -51,11 +53,14 @@ def session(db, request):
     connection = db.engine.connect()
     transaction = connection.begin()
 
-    options = dict(bind=connection, binds={})
-    session = db.create_scoped_session(options=options)
     
+
+    options = {'bind':connection, 'binds':{}}
+    session = db.create_scoped_session(options=options)
+
     db.session = session
 
+    print(db.session.registry)
     def teardown():
         transaction.rollback()
         connection.close()
